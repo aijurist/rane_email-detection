@@ -1,0 +1,46 @@
+# Ignore environment variables file
+.env
+
+# Ignore Python virtual environment folder
+.venv/
+
+# Ignore compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore audio files
+*.mp3
+
+# Ignore images folder (captured during runtime)
+img/
+
+# Ignore DLLs if not necessary for version control
+dll/
+
+# Ignore archive folder containing old or reference files
+archive/
+archive\ \(1\)/
+
+# Ignore test output or temp files
+*.out
+*.err
+
+# Ignore the directory for phone detection model versions
+rane phone detection.v1i.yolov8/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE-specific files
+.idea/
+.vscode/
+*.sublime-workspace
+
+# Ignore all test files (if not needed in version control)
+test/
+
+# Ignore the main script and other runtime-specific scripts
+camera_detr.py
+test_audio.py

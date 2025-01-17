@@ -119,5 +119,42 @@ def main():
         cap.release()
         print("Camera feed closed.")
 
+# # comment the above main function and uncomment the below main function to run the code with GUI
+
+# def main():
+#     global last_alert_time
+#     cap = cv2.VideoCapture(RTSP_URL)
+#     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
+#     if not cap.isOpened():
+#         print("Error: Could not connect to camera feed")
+#         return
+#     cv2.setNumThreads(4)
+
+#     try:
+#         while True:
+#             success, frame = cap.read()
+#             if not success:
+#                 print("Error: Failed to grab frame from camera feed")
+#                 break
+            
+#             # Process the frame and handle detection/alerts
+#             last_alert_time = process_frame(frame, last_alert_time, ALERT_DELAY)
+
+#             # Display the frame in a GUI window
+#             cv2.imshow("Camera Feed", frame)
+
+#             # Exit the loop if 'q' is pressed
+#             if cv2.waitKey(1) & 0xFF == ord('q'):
+#                 print("Exiting...")
+#                 break
+
+#             time.sleep(0.03)
+
+#     finally:
+#         cap.release()
+#         cv2.destroyAllWindows()
+#         print("Camera feed closed.")
+
 if __name__ == "__main__":
     main()

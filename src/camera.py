@@ -7,6 +7,9 @@ from datetime import datetime
 import pygame
 import time
 from dotenv import load_dotenv
+# import logging
+# import mylib
+# logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -50,12 +53,12 @@ def send_alert_email(image_path):
     text = f"Phone detected at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     try:
         send_mail(
-            send_from=SEND_FROM,
-            send_to=SEND_TO,
+            send_from='rmlp3cctv@gmail.com',
+            send_to=['s.mohamedazardeen@ranegroup.com', 'shanthosh811@gmail.com', 'ghadhatharan.v@rajalakshmi.edu.in', 'm.sanjay@ranegroup.com'],
             subject="Phone Detection Alert",
             text=text,
             file_path=image_path,
-            app_password=APP_PASSWORD
+            app_password='nhmy bsbw twrk foes'
         )
         print("Email sent successfully.")
     except Exception as e:
@@ -65,37 +68,40 @@ def send_alert_email(image_path):
 # Function to process frames
 def process_frame(frame, last_alert_time, alert_delay):
     global model
-    results = model(frame, stream=True, conf=0.3)
-
+    
+    current_time = time.time()
+    if (current_time - last_alert_time) < alert_delay:
+        cv2.imshow("Camera Feed", frame)
+        return last_alert_time
+    
+    results = model(frame, stream=True, conf=0.5, classes=[67])
+    
     for r in results:
         boxes = r.boxes
         for box in boxes:
-            cls = int(box.cls[0])
-            if classNames[cls] != "cell phone":
-                continue
-
             conf = float(box.conf[0])
-            if conf < 0.3:
+            if conf < 0.5:
                 continue
-
+                
             x1, y1, x2, y2 = map(int, box.xyxy[0])
-            # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2) 
-            # label = f"{classNames[cls]}: {conf:.2f}"
-            # cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            if (time.time() - last_alert_time) >= alert_delay:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                image_path = os.path.join(SAVE_DIR, f"phone_detected_{timestamp}.jpg")
-                cv2.imwrite(image_path, frame)
-
-                # Send email in a separate thread
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            label = f"Phone: {conf:.2f}"
+            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            image_path = os.path.join(SAVE_DIR, f"phone_detected_{timestamp}.jpg")
+            cv2.imwrite(image_path, frame)
+            
+            
+            def handle_alerts():
                 threading.Thread(target=send_alert_email, args=(image_path,), daemon=True).start()
-
-                # Play alert sound
                 pygame.mixer.music.load(AUDIO_FILE)
                 pygame.mixer.music.play()
-
-                return time.time()
-
+            
+            threading.Thread(target=handle_alerts, daemon=True).start()
+            return current_time
+    
+    cv2.imshow("Camera Feed", frame)
     return last_alert_time
 
 # Main function
@@ -105,59 +111,62 @@ def process_frame(frame, last_alert_time, alert_delay):
 #     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
 #     if not cap.isOpened():
-#         print("Error: Could not connect to camera feed")
-#         return
+#        print("Error: Could not connect to camera feed")
+#        return
 #     cv2.setNumThreads(4)
 
-#     try:
-#         while True:
-#             success, frame = cap.read()
-#             if not success:
-#                 print("Error: Failed to grab frame from camera feed")
-#                 break
-#             last_alert_time = process_frame(frame, last_alert_time, ALERT_DELAY)
-#             time.sleep(0.03)
+#    try:
+#        while True:
+#            success, frame = cap.read()
+#            if not success:
+#                print("Error: Failed to grab frame from camera feed")
+#                break
+#            last_alert_time = process_frame(frame, last_alert_time, ALERT_DELAY)
+#            time.sleep(0.03)
 
-#     finally:
-#         cap.release()
-#         print("Camera feed closed.")
+#    finally:
+#        cap.release()
+#        print("Camera feed closed.")
 
-# # comment the above main function and uncomment the below main function to run the code with GUI
+# comment the above main function and uncomment the below main function to run the code with GUI
 
 def main():
-    global last_alert_time
-    cap = cv2.VideoCapture(RTSP_URL)
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+     global last_alert_time
+     cap = cv2.VideoCapture(RTSP_URL, cv2.CAP_FFMPEG)
+     cap.set(cv2.CAP_PROP_FPS,30)
+     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+     cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
-    if not cap.isOpened():
-        print("Error: Could not connect to camera feed")
-        return
-    cv2.setNumThreads(4)
+     if not cap.isOpened():
+         print("Error: Could not connect to camera feed")
+         return
+    #  cv2.setNumThreads(4)
 
-    try:
-        while True:
-            success, frame = cap.read()
-            if not success:
-                print("Error: Failed to grab frame from camera feed")
-                break
-            
-            # Process the frame and handle detection/alerts
-            last_alert_time = process_frame(frame, last_alert_time, ALERT_DELAY)
+     try:
+         while True:
+             success, frame = cap.read()
+             if not success:
+                 print("Error: Failed to grab frame from camera feed")
+                 time.sleep(0.1)
+                 continue
+                #  break
+             # frame resize
+             frame = cv2.resize(frame,(640,480),interpolation=cv2.INTER_AREA)
+             last_alert_time = process_frame(frame, last_alert_time, ALERT_DELAY)
+             cv2.imshow("Camera Feed", frame)
+        
 
-            # Display the frame in a GUI window
-            cv2.imshow("Camera Feed", frame)
+             # Exit the loop if 'q' is pressed
+             if cv2.waitKey(1) & 0xFF == ord('q'):
+                 print("Exiting...")
+                 break
 
-            # Exit the loop if 'q' is pressed
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                print("Exiting...")
-                break
+            #  time.sleep(0.03)
 
-            time.sleep(0.03)
-
-    finally:
-        cap.release()
-        cv2.destroyAllWindows()
-        print("Camera feed closed.")
+     finally:
+         cap.release()
+         cv2.destroyAllWindows()
+         print("Camera feed closed.")
 
 if __name__ == "__main__":
     main()
